@@ -1,157 +1,315 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Coin Wallet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GlobalCoin Wallet</title>
   <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #121212;
-      color: white;
+    html, body {
+      margin: 0; padding: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: black; color: white;
     }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .dark-light-switch {
+    canvas { position: fixed; top: 0; left: 0; z-index: 0; }
+    #intro {
       position: fixed;
-      top: 10px;
-      right: 10px;
+      top:0; left:0; width:100%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+      background:black; z-index: 10;
+      font-size: 24px;
+      animation: fadeOut 3s 3s forwards;
     }
-    .card {
-      background: #1f1f1f;
+    @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+    #mainApp {
+      display: none;
+      position: relative;
+      z-index: 2;
       padding: 20px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+      background: rgba(0,0,0,0.7);
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: #111;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: 0.3s;
+    }
+    .tab.active {
+      background: cyan;
+      color: black;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+    button, input[type="file"], input[type="text"], input[type="number"], select {
+      margin-top: 10px;
+      padding: 10px;
+      background: #222;
+      color: white;
+      border: 1px solid cyan;
+      border-radius: 5px;
+      width: 100%;
     }
     button {
-      background: #00bcd4;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 5px;
+      background: cyan;
+      color: black;
       cursor: pointer;
     }
-    input {
-      width: 100%;
+    #logs {
+      max-height: 150px;
+      overflow-y: auto;
+      background: #111;
       padding: 10px;
-      margin-top: 5px;
-      margin-bottom: 10px;
-      border: none;
+      margin-top: 10px;
       border-radius: 5px;
+      font-size: 14px;
+    }
+    #upiQR {
+      display: none;
+      text-align: center;
+      margin-top: 10px;
+    }
+    #upiQR img {
+      max-width: 200px;
+      margin: 10px 0;
+    }
+    #countdown {
+      font-size: 18px;
+      color: yellow;
     }
   </style>
 </head>
 <body>
-  <div class="dark-light-switch">
-    <button onclick="toggleTheme()">🌓 Toggle Dark/Light</button>
+<canvas id="bgCanvas"></canvas>
+<div id="intro">🌍 Launching GlobalCoin Wallet...</div>
+<div id="mainApp">
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('dashboard')">Dashboard</div>
+    <div class="tab" onclick="showTab('mining')">Mining</div>
+    <div class="tab" onclick="showTab('about')">About</div>
   </div>
-  <div class="container">
-    <h1>🌐 Global Coin Wallet</h1>
-    <div class="card">
-      <h3>Balance: <span id="balance">0</span> GLBC</h3>
-      <h4>INR: ₹<span id="inr">0</span> | USD: $<span id="usd">0</span> | EUR: €<span id="eur">0</span></h4>
-    </div><div class="card">
-  <h3>Buy Mining Plan</h3>
-  <select id="plan">
-    <option value="500">Basic - ₹500</option>
-    <option value="1500">Pro - ₹1500</option>
-    <option value="2799">Turbo - ₹2799</option>
-    <option value="6500">Ultra - ₹6500</option>
-  </select>
-  <button onclick="goToPayment()">Proceed to Payment</button>
+
+  <div class="tab-content active" id="dashboard">
+    <h2>Wallet Dashboard</h2>
+    <p><b>Wallet Address:</b> <span id="walletAddr"></span></p>
+    <p><b>Balance:</b> <span id="walletBal">0.0000</span> GLBC</p>
+    <p><b>GLBC Value:</b> ₹10 / GLBC</p>
+    <div id="currencyRates"></div>
+    <input type="text" id="sendTo" placeholder="Recipient Wallet Address">
+    <input type="number" id="sendAmt" placeholder="Amount to Send">
+    <button onclick="sendCoins()">Send Coins</button>
+    <input type="text" id="receiveAmt" placeholder="Amount Received">
+    <button onclick="receiveCoins()">Receive Coins</button>
+    <button onclick="redeemCoins()">Redeem (10,000 GLBC)</button>
+    <br>
+    <button onclick="backupWallet()">Backup Wallet</button>
+    <input type="file" onchange="restoreWallet(event)">
+    <div id="logs"></div>
+  </div>
+
+  <div class="tab-content" id="mining">
+    <h2>Mining</h2>
+    <select id="planSelect">
+      <option value="">-- Select Plan --</option>
+      <option value="Starter">Starter – ₹199 (0.0005 / 30s for 7 days)</option>
+      <option value="Basic">Basic – ₹499 (0.001 / 30s for 15 days)</option>
+      <option value="Pro">Pro – ₹1499 (0.003 / 30s for 30 days)</option>
+      <option value="Turbo">Turbo – ₹2799 (0.005 / 30s for 45 days)</option>
+      <option value="Ultra">Ultra – ₹6499 (0.01 / 30s for 60 days)</option>
+    </select>
+    <button onclick="activatePlan()">Activate Plan</button>
+    <div id="upiQR">
+      <p>Scan to pay UPI: <b>7604909512@fam</b></p>
+      <img src="https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=upi://pay?pa=7604909512@fam&pn=GlobalCoin&cu=INR" />
+      <p id="countdown">Time left: 5:00</p>
+    </div>
+    <p>Status: <span id="miningStatus">Inactive</span></p>
+    <button onclick="startMining()">Start Mining</button>
+    <div id="miningLogs" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="tab-content" id="about">
+    <h2>About GlobalCoin</h2>
+    <p><b>Creator:</b> Mohammed Riyash B</p>
+    <p><b>Location:</b> India</p>
+    <p><b>Year:</b> 2025</p>
+    <p>This is a private cryptocurrency wallet simulation for educational and concept testing use only.</p>
+  </div>
 </div>
 
-<div class="card">
-  <h3>Send Coins</h3>
-  <input type="text" id="sendTo" placeholder="Recipient Username" />
-  <input type="number" id="sendAmount" placeholder="Amount to Send" />
-  <button onclick="sendCoins()">Send</button>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+<script>
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bgCanvas'), alpha: true });
+renderer.setSize(innerWidth, innerHeight);
+const earthTexture = new THREE.TextureLoader().load('https://raw.githubusercontent.com/hql287/3d-earth/master/images/2_no_clouds_4k.jpg');
+const earth = new THREE.Mesh(new THREE.SphereGeometry(2, 64, 64), new THREE.MeshStandardMaterial({ map: earthTexture }));
+scene.add(earth);
+const light = new THREE.PointLight(0xffffff, 1); light.position.set(5, 5, 5); scene.add(light);
+camera.position.z = 5;
+function animateEarth() {
+  requestAnimationFrame(animateEarth);
+  earth.rotation.y += 0.0015;
+  renderer.render(scene, camera);
+}
+animateEarth();
 
-<div class="card">
-  <h3>Receive Coins</h3>
-  <input type="text" id="fromUser" placeholder="Sender Username" />
-  <input type="number" id="receiveAmount" placeholder="Amount to Receive" />
-  <button onclick="receiveCoins()">Receive</button>
-</div>
+setTimeout(() => {
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  updateCurrencyRates();
+}, 4000);
 
-<div class="card">
-  <h3>Redeem Coins</h3>
-  <input type="text" id="upi" placeholder="Your UPI ID" />
-  <button onclick="redeemCoins()">Redeem 10,000 GLBC</button>
-</div>
+function showTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${tabId}"]`).classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
 
-<div class="card">
-  <h3>Transaction Logs</h3>
-  <div id="logs"></div>
-</div>
+let wallet = JSON.parse(localStorage.getItem("glbcWallet")) || {
+  address: "GLBC-" + Math.random().toString(36).substr(2, 9).toUpperCase(),
+  balance: 0,
+  logs: [],
+  isMining: false,
+  plan: null,
+  planExpiry: null,
+  rate: 0
+};
 
-  </div>  <script>
-    let isDark = true;
-    function toggleTheme() {
-      document.body.style.backgroundColor = isDark ? '#ffffff' : '#121212';
-      document.body.style.color = isDark ? '#000000' : '#ffffff';
-      isDark = !isDark;
+document.getElementById("walletAddr").innerText = wallet.address;
+document.getElementById("walletBal").innerText = wallet.balance.toFixed(4);
+let miningInterval = null;
+
+function saveWallet() {
+  localStorage.setItem("glbcWallet", JSON.stringify(wallet));
+  document.getElementById("walletBal").innerText = wallet.balance.toFixed(4);
+}
+
+function log(text) {
+  wallet.logs.unshift(new Date().toLocaleString() + ": " + text);
+  document.getElementById("logs").innerText = wallet.logs.slice(0, 10).join("\n");
+  saveWallet();
+}
+
+function sendCoins() {
+  const to = document.getElementById("sendTo").value.trim();
+  const amt = parseFloat(document.getElementById("sendAmt").value);
+  if (!to || amt <= 0 || amt > wallet.balance) return alert("Invalid send");
+  wallet.balance -= amt;
+  log(`Sent ${amt} GLBC to ${to}`);
+  saveWallet();
+}
+
+function receiveCoins() {
+  const amt = parseFloat(document.getElementById("receiveAmt").value);
+  if (amt <= 0) return alert("Invalid receive amount");
+  wallet.balance += amt;
+  log(`Received ${amt} GLBC`);
+  saveWallet();
+}
+
+function redeemCoins() {
+  if (wallet.balance < 10000) return alert("Minimum 10,000 GLBC required");
+  wallet.balance -= 10000;
+  log("Redeemed 10,000 GLBC");
+  saveWallet();
+}
+
+function backupWallet() {
+  const blob = new Blob([JSON.stringify(wallet)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "GLBC_Wallet_Backup.json";
+  a.click();
+}
+
+function restoreWallet(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      wallet = JSON.parse(e.target.result);
+      log("Wallet restored successfully");
+      document.getElementById("walletAddr").innerText = wallet.address;
+      document.getElementById("walletBal").innerText = wallet.balance.toFixed(4);
+      saveWallet();
+    } catch (e) {
+      alert("Invalid wallet file");
     }
+  };
+  reader.readAsText(file);
+}
 
-    const balanceEl = document.getElementById("balance");
-    const inrEl = document.getElementById("inr");
-    const usdEl = document.getElementById("usd");
-    const eurEl = document.getElementById("eur");
-    const logs = document.getElementById("logs");
-    let balance = 0;
+function updateCurrencyRates() {
+  const inr = 10;
+  document.getElementById("currencyRates").innerHTML =
+    `<p>1 GLBC ≈ ₹${inr} | $${(inr / 83).toFixed(2)} | €${(inr / 90).toFixed(2)} | ¥${(inr / 0.58).toFixed(2)}</p>`;
+}
 
-    function updateValues() {
-      balanceEl.textContent = balance;
-      inrEl.textContent = (balance * 10).toFixed(2);
-      usdEl.textContent = (balance * 0.12).toFixed(2);
-      eurEl.textContent = (balance * 0.11).toFixed(2);
+function activatePlan() {
+  const plan = document.getElementById("planSelect").value;
+  const planData = {
+    Starter: { price: 199, days: 7, rate: 0.0005 },
+    Basic: { price: 499, days: 15, rate: 0.001 },
+    Pro: { price: 1499, days: 30, rate: 0.003 },
+    Turbo: { price: 2799, days: 45, rate: 0.005 },
+    Ultra: { price: 6499, days: 60, rate: 0.01 }
+  };
+  if (!planData[plan]) return alert("Select a valid plan");
+  document.getElementById("upiQR").style.display = "block";
+  let secondsLeft = 300;
+  const countdownEl = document.getElementById("countdown");
+  const interval = setInterval(() => {
+    const min = Math.floor(secondsLeft / 60);
+    const sec = secondsLeft % 60;
+    countdownEl.innerText = `Time left: ${min}:${sec.toString().padStart(2, '0')}`;
+    if (--secondsLeft < 0) {
+      clearInterval(interval);
+      document.getElementById("upiQR").style.display = "none";
+      wallet.plan = plan;
+      wallet.planExpiry = Date.now() + planData[plan].days * 24 * 60 * 60 * 1000;
+      wallet.rate = planData[plan].rate;
+      log(`${plan} Plan Activated`);
+      saveWallet();
     }
+  }, 1000);
+}
 
-    function goToPayment() {
-      alert("Scan the UPI QR code: 7604909512@fam\nYou have 5 minutes to complete the payment.");
-      setTimeout(() => {
-        balance += 100; // Simulate plan activation
-        updateValues();
-        logs.innerHTML += `<p>✔️ Mining Plan Activated. +100 GLBC</p>`;
-      }, 5000);
+function startMining() {
+  if (wallet.isMining || !wallet.plan) return alert("Activate a plan first");
+  if (Date.now() > wallet.planExpiry) return alert("Plan expired. Activate again.");
+  wallet.isMining = true;
+  document.getElementById("miningStatus").innerText = "Active";
+  const logArea = document.getElementById("miningLogs");
+  if (miningInterval) clearInterval(miningInterval);
+  miningInterval = setInterval(() => {
+    if (Date.now() > wallet.planExpiry) {
+      clearInterval(miningInterval);
+      wallet.isMining = false;
+      document.getElementById("miningStatus").innerText = "Expired";
+      return log("Mining stopped. Plan expired.");
     }
-
-    function sendCoins() {
-      const to = document.getElementById("sendTo").value;
-      const amount = parseFloat(document.getElementById("sendAmount").value);
-      if (amount > balance) {
-        alert("Insufficient balance.");
-        return;
-      }
-      balance -= amount;
-      updateValues();
-      logs.innerHTML += `<p>🔁 Sent ${amount} GLBC to ${to}</p>`;
-    }
-
-    function receiveCoins() {
-      const from = document.getElementById("fromUser").value;
-      const amount = parseFloat(document.getElementById("receiveAmount").value);
-      balance += amount;
-      updateValues();
-      logs.innerHTML += `<p>📥 Received ${amount} GLBC from ${from}</p>`;
-    }
-
-    function redeemCoins() {
-      if (balance < 10000) {
-        alert("Minimum 10,000 GLBC required to redeem.");
-        return;
-      }
-      const upi = document.getElementById("upi").value;
-      alert(`Redeem request sent to ${upi}.`);
-      balance -= 10000;
-      updateValues();
-      logs.innerHTML += `<p>💸 Redeemed 10,000 GLBC to ${upi}</p>`;
-    }
-  </script></body>
+    wallet.balance += wallet.rate;
+    log("Mined " + wallet.rate.toFixed(4) + " GLBC");
+    logArea.innerText = `Mined ${wallet.rate.toFixed(4)} GLBC at ${new Date().toLocaleTimeString()}`;
+    saveWallet();
+  }, 30000);
+}
+</script>
+</body>
 </html>
