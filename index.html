@@ -1,46 +1,143 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Coin Wallet</title>
-  <link rel="stylesheet" href="style.css"/>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+    }
+    h1, h2 {
+      color: #004aad;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .plans button {
+      margin-top: 10px;
+    }
+    .founder {
+      background: #e6f2ff;
+      padding: 10px;
+      border-left: 5px solid #007bff;
+    }
+    input, button {
+      padding: 10px;
+      margin-top: 8px;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .hidden { display: none; }
+    .currency { font-weight: bold; }
+    .qr {
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>🌐 Global Coin Wallet (GLBC)</h1>
-    <p>1 GLBC = ₹23 | $0.28 | €0.26 | ¥32</p>
-  </header>
-  <main>
-    <section>
-      <h2>Founder</h2>
-      <p>Mohammed Riyash B, Bmr.inc, India, 2025</p>
-    </section>
-    <section>
-      <h2>Mining Plans</h2>
-      <ul>
-        <li>₹99 → 0.000001 GLBC/hr → 0.00072/month</li>
-        <li>₹299 → 0.0001 GLBC/hr → 0.072/month</li>
-        <li>₹799 → 0.02 GLBC/hr → 14.4/month</li>
-        <li>₹1000 → 0.1 GLBC/hr → 72/month</li>
-      </ul>
-    </section>
-    <section>
-      <h2>Blockchain Explorer</h2>
-      <p>🔎 Search simulated GLBC blockchain here (offline version)</p>
-    </section>
-    <section>
-      <h2>QR Tools</h2>
-      <p>📷 Scan/Generate QR codes for GLBC transfers</p>
-    </section>
-    <section>
-      <h2>Hidden Founder Airdrop</h2>
-      <p>Enter secret code: <code>Mohd5187</code> to unlock 1000 GLBC</p>
-    </section>
-  </main>
-  <footer>
-    <p>© 2025 Global Coin | Bmr.inc</p>
-  </footer>
+
+  <h1>🌍 Global Coin Wallet</h1>
+
+  <div class="card founder">
+    <h2>Founder Info</h2>
+    <p><strong>Name:</strong> Mohammed Riyash B</p>
+    <p><strong>Company:</strong> Bmr.inc</p>
+    <p><strong>Country:</strong> India</p>
+    <p><strong>Year:</strong> 2025</p>
+  </div>
+
+  <div class="card">
+    <h2>GLBC Coin Value</h2>
+    <p>1 GLBC = <span class="currency">₹23 INR</span></p>
+    <ul>
+      <li>USD ≈ $0.28</li>
+      <li>EUR ≈ €0.26</li>
+      <li>JPY ≈ ¥32</li>
+    </ul>
+  </div>
+
+  <div class="card plans">
+    <h2>⛏️ Mining Plans</h2>
+    <p>Select a plan and pay to: <b>7604909512@fam (UPI)</b></p>
+    <ul>
+      <li>₹99 → 0.000001 GLBC/hr → 0.00072/month</li>
+      <li>₹299 → 0.0001 GLBC/hr → 0.072/month</li>
+      <li>₹799 → 0.02 GLBC/hr → 14.4/month</li>
+      <li>₹1000 → 0.1 GLBC/hr → 72/month</li>
+    </ul>
+    <button onclick="alert('Pay ₹99 to UPI and start mining!')">Buy ₹99 Plan</button>
+    <button onclick="alert('Pay ₹299 to UPI and start mining!')">Buy ₹299 Plan</button>
+    <button onclick="alert('Pay ₹799 to UPI and start mining!')">Buy ₹799 Plan</button>
+    <button onclick="alert('Pay ₹1000 to UPI and start mining!')">Buy ₹1000 Plan</button>
+  </div>
+
+  <div class="card">
+    <h2>🔓 Unlock Founder Airdrop</h2>
+    <input type="password" placeholder="Enter Secret Code" id="secret" />
+    <button onclick="unlockAirdrop()">Unlock</button>
+    <p id="airdropResult" style="font-weight: bold;"></p>
+  </div>
+
+  <div class="card">
+    <h2>📦 Blockchain Explorer (Simulation)</h2>
+    <input type="text" placeholder="Enter GLBC Address" id="searchAddress"/>
+    <button onclick="searchAddress()">Search</button>
+    <p id="explorerResult"></p>
+  </div>
+
+  <div class="card">
+    <h2>📷 QR Code Generator</h2>
+    <input type="text" id="qrInput" placeholder="Enter GLBC Wallet Address"/>
+    <button onclick="generateQR()">Generate QR</button>
+    <div class="qr" id="qrOutput"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    function unlockAirdrop() {
+      const code = document.getElementById("secret").value;
+      const result = document.getElementById("airdropResult");
+      if (code === "Mohd5187") {
+        result.innerText = "🎉 1000 GLBC Airdrop Unlocked!";
+        result.style.color = "green";
+      } else {
+        result.innerText = "❌ Incorrect code.";
+        result.style.color = "red";
+      }
+    }
+
+    function searchAddress() {
+      const address = document.getElementById("searchAddress").value;
+      const result = document.getElementById("explorerResult");
+      if (address.length > 10) {
+        result.innerHTML = "🔍 Balance: " + (Math.random() * 10).toFixed(4) + " GLBC (simulated)";
+      } else {
+        result.innerHTML = "⚠️ Invalid address";
+      }
+    }
+
+    function generateQR() {
+      const address = document.getElementById("qrInput").value;
+      const qrDiv = document.getElementById("qrOutput");
+      qrDiv.innerHTML = '';
+      if (address) {
+        QRCode.toCanvas(document.createElement('canvas'), address, function (error, canvas) {
+          if (error) console.error(error)
+          qrDiv.appendChild(canvas);
+        });
+      }
+    }
+  </script>
+
 </body>
 </html>
