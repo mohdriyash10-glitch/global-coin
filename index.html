@@ -2,128 +2,138 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Coin Wallet</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <title>GlobalCoin Wallet</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; margin: 0; color: #333; }
-    .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    input, button { padding: 10px; margin: 6px 0; width: 100%; border-radius: 6px; border: 1px solid #ccc; }
-    h1, h2 { color: #004aad; }
-    .currency { font-weight: bold; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
+    .container { max-width: 600px; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; }
+    input, button, select { width: 100%; padding: 10px; margin: 10px 0; }
+    #dashboard, #paymentPage { display: none; }
+    #qr { text-align: center; }
+    #timer { color: red; font-weight: bold; }
   </style>
 </head>
-<body>  <h1>🌍 Global Coin Wallet</h1>
-  <div class="card">
-    <button onclick="signInWithGoogle()">🔐 Sign In with Google</button>
-    <p id="userInfo"></p>
-  </div>  <div class="card">
-    <h2>GLBC Coin Value</h2>
-    <p>1 GLBC = <span class="currency">₹10 INR</span></p>
-    <ul>
-      <li>USD ≈ $0.12</li>
-      <li>EUR ≈ €0.11</li>
-      <li>JPY ≈ ¥15</li>
-    </ul>
-  </div>  <div class="card">
-    <h2>Wallet Balance</h2>
-    <p id="balance">GLBC: 0.0000</p>
-  </div>  <div class="card">
-    <h2>⛏️ Mining Plans</h2>
-    <p>Select and pay via UPI: <b>7604909512@fam</b></p>
-    <button onclick="startPayment(99)">Buy ₹99 Plan</button>
-    <button onclick="startPayment(299)">Buy ₹299 Plan</button>
-    <button onclick="startPayment(799)">Buy ₹799 Plan</button>
-    <button onclick="startPayment(1000)">Buy ₹1000 Plan</button>
-  </div>  <div class="card">
-    <h2>📤 Send Coins</h2>
-    <input type="text" id="sendTo" placeholder="Recipient Wallet ID">
-    <input type="number" id="sendAmount" placeholder="Amount to Send">
-    <button onclick="sendCoins()">Send</button>
-    <p id="sendMsg"></p>
-  </div>  <div class="card">
-    <h2>📥 Receive Coins</h2>
-    <p>Your Wallet ID: <span id="walletID"></span></p>
-  </div>  <div class="card">
-    <h2>💸 Redeem Coins</h2>
-    <input type="text" id="upiID" placeholder="Enter UPI ID">
-    <button onclick="redeemCoins()">Redeem 10,000 GLBC</button>
-    <p id="redeemMsg"></p>
-  </div><script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDv9smkaXDyJd_3IEMZ0tYlOJeEI-B8vvI",
-    authDomain: "globalcoinwalletintra.firebaseapp.com",
-    projectId: "globalcoinwalletintra",
-    storageBucket: "globalcoinwalletintra.appspot.com",
-    messagingSenderId: "156354940268",
-    appId: "1:156354940268:web:35323f0c6ced32c72f3749"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+<body>
+  <div class="container">
+    <div id="loginPage">
+      <h1>Login</h1>
+      <input type="text" id="username" placeholder="Username" />
+      <input type="tel" id="phone" placeholder="Phone Number" />
+      <button onclick="sendOTP()">Send OTP</button>
+      <input type="text" id="otp" placeholder="Enter OTP" style="display:none;" />
+      <button onclick="verifyOTP()" style="display:none;" id="verifyBtn">Verify</button>
+    </div><div id="dashboard">
+  <h1>Wallet Dashboard</h1>
+  <h2 id="walletBalance">Balance: 0 GLBC</h2>
 
-  let user = null;
+  <h3>Send Coins</h3>
+  <input type="text" id="sendTo" placeholder="Recipient Username" />
+  <input type="number" id="sendAmount" placeholder="Amount to Send" />
+  <button onclick="sendCoins()">Send</button>
 
-  function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).then(result => {
-      user = result.user;
-      document.getElementById("userInfo").innerText = `Signed in as ${user.displayName}`;
-      document.getElementById("walletID").innerText = user.uid;
-      loadWallet();
-    });
-  }
+  <h3>Receive Coins</h3>
+  <p>Your Wallet ID: <b id="walletId">user123</b></p>
 
-  function loadWallet() {
-    db.collection("wallets").doc(user.uid).get().then(doc => {
-      if (doc.exists) {
-        document.getElementById("balance").innerText = `GLBC: ${doc.data().balance.toFixed(4)}`;
+  <h3>Redeem Coins</h3>
+  <input type="text" id="redeemUPI" placeholder="Enter UPI ID" />
+  <button onclick="redeemCoins()">Redeem 10,000 GLBC</button>
+
+  <h3>Buy Mining Plan</h3>
+  <select id="planSelect">
+    <option value="500">Basic - ₹500</option>
+    <option value="1500">Pro - ₹1500</option>
+    <option value="2799">Turbo - ₹2799</option>
+    <option value="6500">Ultra - ₹6500</option>
+  </select>
+  <button onclick="buyPlan()">Buy Plan</button>
+</div>
+
+<div id="paymentPage">
+  <h2>Scan & Pay</h2>
+  <div id="qr">
+    <img id="qrImage" src="" alt="QR Code" width="250" />
+    <p>Pay to: <b>7604909512@fam</b></p>
+    <p>Amount: ₹<span id="qrAmount"></span></p>
+    <p id="timer">Time Left: 5:00</p>
+    <button onclick="confirmPayment()">I Have Paid</button>
+  </div>
+</div>
+
+  </div>  <script>
+    let balance = 0;
+    let otp = "123456"; // Simulated OTP
+    let timerInterval;
+
+    function sendOTP() {
+      document.getElementById("otp").style.display = "block";
+      document.getElementById("verifyBtn").style.display = "block";
+      alert("Simulated OTP sent: " + otp);
+    }
+
+    function verifyOTP() {
+      const entered = document.getElementById("otp").value;
+      if (entered === otp) {
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        const user = document.getElementById("username").value;
+        document.getElementById("walletId").innerText = user;
       } else {
-        db.collection("wallets").doc(user.uid).set({ balance: 0 });
-        document.getElementById("balance").innerText = `GLBC: 0.0000`;
+        alert("Incorrect OTP");
       }
-    });
-  }
+    }
 
-  function startPayment(amount) {
-    alert(`Redirecting to payment via UPI to 7604909512@fam for ₹${amount}`);
-    // Simulate redirect
-    setTimeout(() => {
-      alert("✅ Payment successful. Mining activated.");
-    }, 2000);
-  }
+    function sendCoins() {
+      const amount = parseInt(document.getElementById("sendAmount").value);
+      if (amount > balance) return alert("Insufficient Balance");
+      balance -= amount;
+      updateBalance();
+      alert("Sent " + amount + " GLBC successfully!");
+    }
 
-  function sendCoins() {
-    const to = document.getElementById("sendTo").value;
-    const amt = parseFloat(document.getElementById("sendAmount").value);
-    if (!to || !amt) return alert("Enter recipient and amount.");
-    db.collection("wallets").doc(user.uid).get().then(doc => {
-      const balance = doc.data().balance;
-      if (amt > balance) return alert("Insufficient balance");
-      db.collection("wallets").doc(user.uid).update({ balance: balance - amt });
-      db.collection("wallets").doc(to).get().then(d => {
-        const rbal = d.exists ? d.data().balance : 0;
-        db.collection("wallets").doc(to).set({ balance: rbal + amt });
-        document.getElementById("sendMsg").innerText = `✅ Sent ${amt} GLBC to ${to}`;
-        loadWallet();
-      });
-    });
-  }
+    function redeemCoins() {
+      if (balance < 10000) return alert("Need 10,000 GLBC to redeem");
+      balance -= 10000;
+      updateBalance();
+      alert("Redeemed 10,000 GLBC to bank/UPI");
+    }
 
-  function redeemCoins() {
-    const upi = document.getElementById("upiID").value;
-    if (!upi) return alert("Enter your UPI ID");
-    db.collection("wallets").doc(user.uid).get().then(doc => {
-      const bal = doc.data().balance;
-      if (bal < 10000) {
-        document.getElementById("redeemMsg").innerText = "❌ Need exactly 10,000 GLBC to redeem.";
-        return;
-      }
-      db.collection("wallets").doc(user.uid).update({ balance: bal - 10000 });
-      document.getElementById("redeemMsg").innerText = `✅ Redemption request sent to ${upi}`;
-      loadWallet();
-    });
-  }
-</script></body>
+    function buyPlan() {
+      const amount = document.getElementById("planSelect").value;
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("paymentPage").style.display = "block";
+      document.getElementById("qrAmount").innerText = amount;
+      const qr = `https://api.qrserver.com/v1/create-qr-code/?data=upi://pay?pa=7604909512@fam&pn=GlobalCoinWallet&am=${amount}&cu=INR&size=250x250`;
+      document.getElementById("qrImage").src = qr;
+      startTimer();
+    }
+
+    function startTimer() {
+      let total = 300;
+      timerInterval = setInterval(() => {
+        total--;
+        const min = Math.floor(total / 60);
+        const sec = total % 60;
+        document.getElementById("timer").innerText = `Time Left: ${min}:${sec.toString().padStart(2, '0')}`;
+        if (total <= 0) {
+          clearInterval(timerInterval);
+          alert("Payment session expired");
+          document.getElementById("paymentPage").style.display = "none";
+          document.getElementById("dashboard").style.display = "block";
+        }
+      }, 1000);
+    }
+
+    function confirmPayment() {
+      clearInterval(timerInterval);
+      document.getElementById("paymentPage").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      balance += 100; // Simulate adding some GLBC
+      updateBalance();
+      alert("Plan Activated & GLBC Rewarded");
+    }
+
+    function updateBalance() {
+      document.getElementById("walletBalance").innerText = `Balance: ${balance} GLBC`;
+    }
+  </script></body>
 </html>
