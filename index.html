@@ -1,108 +1,194 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GlobalCoin Wallet</title>
-  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; padding: 20px; }
-    input, button { padding: 10px; margin: 10px; font-size: 16px; }
-    #walletSection { display: none; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #222;
+    }
+    .section {
+      margin-top: 30px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      background: #f9f9f9;
+    }
+    .btn {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .qr {
+      text-align: center;
+      margin: 15px 0;
+    }
   </style>
 </head>
 <body>
-  <h1>🌐 GlobalCoin Wallet</h1>
-
-  <div id="loginSection">
-    <h2>Login with Phone</h2>
-    <input type="text" id="phoneNumber" placeholder="+91XXXXXXXXXX" /><br>
+<div class="container">
+  <h1>GlobalCoin Wallet</h1>  <div id="login-section" class="section">
+    <h3>Login with Phone</h3>
+    <input type="tel" id="phone" placeholder="Enter phone number" />
     <div id="recaptcha-container"></div>
-    <button onclick="sendOTP()">Send OTP</button><br>
-
-    <input type="text" id="otp" placeholder="Enter OTP" style="display:none;" />
-    <button onclick="verifyOTP()" style="display:none;" id="verifyBtn">Verify</button>
+    <button class="btn" onclick="sendOTP()">Send OTP</button>
+    <input type="text" id="otp" placeholder="Enter OTP" />
+    <button class="btn" onclick="verifyOTP()">Verify OTP</button>
+  </div>  <div id="wallet-section" class="section" style="display:none">
+    <h3>Welcome</h3>
+    <p><b>Wallet Address:</b> <span id="wallet-address"></span></p>
+    <p><b>Balance:</b> <span id="wallet-balance">0</span> GLBC</p><h4>Mining Plans</h4>
+<select id="plan-select">
+  <option value="starter">Starter - ₹199 / 7 days / 0.0005/30s</option>
+  <option value="basic">Basic - ₹499 / 15 days / 0.001/30s</option>
+  <option value="pro">Pro - ₹1499 / 30 days / 0.003/30s</option>
+  <option value="turbo">Turbo - ₹2799 / 45 days / 0.005/30s</option>
+  <option value="ultra">Ultra - ₹6499 / 60 days / 0.01/30s</option>
+</select>
+<button class="btn" onclick="startPayment()">Pay & Activate</button>
+<div id="payment-section" style="display:none">
+  <p>Scan & Pay UPI ID:</p>
+  <div class="qr">
+    <img src="https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=upi://pay?pa=7604909512@fam&pn=GlobalCoinWallet&cu=INR" />
   </div>
+  <p><b>UPI ID:</b> 7604909512@fam</p>
+  <p id="countdown"></p>
+  <button class="btn" onclick="confirmPayment()">I Paid</button>
+</div>
 
-  <div id="walletSection">
-    <h2>Welcome to GlobalCoin Wallet</h2>
-    <p><b>Wallet Address:</b> <span id="walletAddress"></span></p>
-    <p><b>Balance:</b> <span id="balance">0 GLBC</span></p>
+<h4>Transaction Log</h4>
+<ul id="tx-log"></ul>
 
-    <!-- Add send/receive/mining UI below -->
-    <button onclick="sendCoin()">Send Coin</button>
-    <button onclick="receiveCoin()">Receive Coin</button>
   </div>
+</div><!-- Firebase --><script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script><script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script><script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBL4ElX_vSnf_g0CfL52KB8r3XqQedPQrw",
+    authDomain: "globalcoin-wallet.firebaseapp.com",
+    databaseURL: "https://globalcoin-wallet-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "globalcoin-wallet",
+    storageBucket: "globalcoin-wallet.appspot.com",
+    messagingSenderId: "401955845745",
+    appId: "1:401955845745:web:7feef43d47533e51448dd0",
+  };
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
 
-  <script>
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBL4ElX_vSnf_g0CfL52KB8r3XqQedPQrw",
-      authDomain: "globalcoin-wallet.firebaseapp.com",
-      databaseURL: "https://globalcoin-wallet-default-rtdb.firebaseio.com",
-      projectId: "globalcoin-wallet",
-      storageBucket: "globalcoin-wallet.appspot.com",
-      messagingSenderId: "401955845745",
-      appId: "1:401955845745:web:7feef43d47533e51448dd0"
-    };
+  let confirmationResult;
+  let miningInterval;
+  const plans = {
+    starter: { price: 199, duration: 7, rate: 0.0005 },
+    basic: { price: 499, duration: 15, rate: 0.001 },
+    pro: { price: 1499, duration: 30, rate: 0.003 },
+    turbo: { price: 2799, duration: 45, rate: 0.005 },
+    ultra: { price: 6499, duration: 60, rate: 0.01 },
+  };
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+  function sendOTP() {
+    const phone = document.getElementById('phone').value;
+    const appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+    auth.signInWithPhoneNumber(phone, appVerifier)
+      .then(result => { confirmationResult = result; alert('OTP sent'); })
+      .catch(e => alert(e.message));
+  }
 
-    let confirmationResult;
-    const auth = firebase.auth();
-    const database = firebase.database();
+  function verifyOTP() {
+    const code = document.getElementById('otp').value;
+    confirmationResult.confirm(code).then(res => {
+      const user = res.user;
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('wallet-section').style.display = 'block';
+      initializeWallet(user.uid);
+    }).catch(e => alert(e.message));
+  }
 
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      'size': 'normal',
-      'callback': (response) => {}
+  function initializeWallet(uid) {
+    const walletRef = db.ref('wallets/' + uid);
+    walletRef.once('value', snap => {
+      if (!snap.exists()) {
+        walletRef.set({ balance: 0, logs: [] });
+      }
     });
-    recaptchaVerifier.render();
-
-    function sendOTP() {
-      const phoneNumber = document.getElementById('phoneNumber').value;
-      auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
-        .then((result) => {
-          confirmationResult = result;
-          document.getElementById('otp').style.display = 'inline';
-          document.getElementById('verifyBtn').style.display = 'inline';
-          alert("OTP sent!");
-        }).catch((error) => {
-          alert("Error: " + error.message);
+    walletRef.on('value', snap => {
+      const data = snap.val();
+      document.getElementById('wallet-address').innerText = uid;
+      document.getElementById('wallet-balance').innerText = data.balance.toFixed(4);
+      const logList = document.getElementById('tx-log');
+      logList.innerHTML = '';
+      if (data.logs) {
+        data.logs.forEach(entry => {
+          const li = document.createElement('li');
+          li.innerText = entry;
+          logList.appendChild(li);
         });
-    }
+      }
+    });
+  }
 
-    function verifyOTP() {
-      const code = document.getElementById('otp').value;
-      confirmationResult.confirm(code).then((result) => {
-        const user = result.user;
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('walletSection').style.display = 'block';
-        const uid = user.uid;
-        document.getElementById('walletAddress').innerText = uid;
+  function startPayment() {
+    document.getElementById('payment-section').style.display = 'block';
+    let timeLeft = 300;
+    const countdownEl = document.getElementById('countdown');
+    const interval = setInterval(() => {
+      countdownEl.innerText = `⏳ Time left to pay: ${timeLeft--} sec`;
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        countdownEl.innerText = "❌ Payment time expired.";
+        document.getElementById('payment-section').style.display = 'none';
+      }
+    }, 1000);
+  }
 
-        // Fetch or create user balance
-        const balanceRef = database.ref('users/' + uid + '/balance');
-        balanceRef.once('value').then(snapshot => {
-          if (!snapshot.exists()) {
-            balanceRef.set(0);
-            document.getElementById('balance').innerText = '0 GLBC';
-          } else {
-            document.getElementById('balance').innerText = snapshot.val() + ' GLBC';
-          }
-        });
-      }).catch((error) => {
-        alert("Incorrect OTP!");
+  function confirmPayment() {
+    const uid = auth.currentUser.uid;
+    const selected = document.getElementById('plan-select').value;
+    const plan = plans[selected];
+    const walletRef = db.ref('wallets/' + uid);
+    const startTime = Date.now();
+    const endTime = startTime + plan.duration * 24 * 60 * 60 * 1000;
+
+    miningInterval = setInterval(() => {
+      const now = Date.now();
+      if (now > endTime) {
+        clearInterval(miningInterval);
+        alert('⛏️ Mining plan expired');
+        return;
+      }
+      walletRef.transaction(data => {
+        if (data) {
+          data.balance += plan.rate;
+          if (!data.logs) data.logs = [];
+          data.logs.push(`Mined ${plan.rate} GLBC at ${new Date().toLocaleTimeString()}`);
+        }
+        return data;
       });
-    }
+    }, 30000);
 
-    function sendCoin() {
-      alert("Send Coin logic will go here.");
-    }
-
-    function receiveCoin() {
-      alert("Receive Coin logic will go here.");
-    }
-  </script>
-</body>
+    document.getElementById('payment-section').style.display = 'none';
+    alert('✅ Payment confirmed. Mining started.');
+  }
+</script></body>
 </html>
