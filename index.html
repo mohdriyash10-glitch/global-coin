@@ -2,138 +2,177 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GlobalCoin Wallet</title>
+  <title>Global Coin Wallet</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/ui/6.0.2/firebase-ui-auth.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.2/firebase-ui-auth.css" />
+  <script src="https://www.google.com/recaptcha/api.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
-    .container { max-width: 600px; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    h1, h2 { text-align: center; }
-    input, button, select { width: 100%; padding: 10px; margin: 10px 0; }
-    #dashboard, #paymentPage { display: none; }
-    #qr { text-align: center; }
-    #timer { color: red; font-weight: bold; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f0f2f5; }
+    .container { max-width: 500px; margin: 50px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .hidden { display: none; }
+    button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    input, select { width: 100%; padding: 10px; margin-top: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="loginPage">
-      <h1>Login</h1>
-      <input type="text" id="username" placeholder="Username" />
-      <input type="tel" id="phone" placeholder="Phone Number" />
-      <button onclick="sendOTP()">Send OTP</button>
-      <input type="text" id="otp" placeholder="Enter OTP" style="display:none;" />
-      <button onclick="verifyOTP()" style="display:none;" id="verifyBtn">Verify</button>
-    </div><div id="dashboard">
-  <h1>Wallet Dashboard</h1>
-  <h2 id="walletBalance">Balance: 0 GLBC</h2>
+  <div id="login-screen" class="container">
+    <h2>Global Coin Wallet Login</h2>
+    <input type="text" id="username" placeholder="Enter Username" required />
+    <input type="tel" id="phone" placeholder="Enter Phone Number" required />
+    <div id="recaptcha-container"></div>
+    <button onclick="sendOTP()">Send OTP</button>
+    <input type="text" id="otp" class="hidden" placeholder="Enter OTP" />
+    <button id="verifyBtn" class="hidden" onclick="verifyOTP()">Verify & Login</button>
+  </div>  <div id="dashboard" class="container hidden">
+    <h2>Welcome to Global Coin Wallet</h2>
+    <p><strong>Username:</strong> <span id="dispUsername"></span></p>
+    <p><strong>Wallet ID:</strong> <span id="walletId"></span></p>
+    <p><strong>Balance:</strong> <span id="balance">0</span> GLBC</p><h3>Buy Mining Plan</h3>
+<select id="plan">
+  <option value="">Select a plan</option>
+  <option value="basic">Basic - ₹500</option>
+  <option value="pro">Pro - ₹1500</option>
+  <option value="ultra">Ultra - ₹6500</option>
+</select>
+<button onclick="showPaymentQR()">Buy</button>
 
-  <h3>Send Coins</h3>
-  <input type="text" id="sendTo" placeholder="Recipient Username" />
-  <input type="number" id="sendAmount" placeholder="Amount to Send" />
-  <button onclick="sendCoins()">Send</button>
-
-  <h3>Receive Coins</h3>
-  <p>Your Wallet ID: <b id="walletId">user123</b></p>
-
-  <h3>Redeem Coins</h3>
-  <input type="text" id="redeemUPI" placeholder="Enter UPI ID" />
-  <button onclick="redeemCoins()">Redeem 10,000 GLBC</button>
-
-  <h3>Buy Mining Plan</h3>
-  <select id="planSelect">
-    <option value="500">Basic - ₹500</option>
-    <option value="1500">Pro - ₹1500</option>
-    <option value="2799">Turbo - ₹2799</option>
-    <option value="6500">Ultra - ₹6500</option>
-  </select>
-  <button onclick="buyPlan()">Buy Plan</button>
+<div id="qrSection" class="hidden">
+  <p>Pay using UPI ID: <strong>7604909512@fam</strong></p>
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=7604909512@fam" alt="QR Code" />
+  <p><strong>Complete payment and click confirm within 5 minutes.</strong></p>
+  <input type="checkbox" id="paidConfirm" /> I have completed payment
+  <br><br>
+  <button onclick="confirmPayment()">Confirm Payment</button>
 </div>
 
-<div id="paymentPage">
-  <h2>Scan & Pay</h2>
-  <div id="qr">
-    <img id="qrImage" src="" alt="QR Code" width="250" />
-    <p>Pay to: <b>7604909512@fam</b></p>
-    <p>Amount: ₹<span id="qrAmount"></span></p>
-    <p id="timer">Time Left: 5:00</p>
-    <button onclick="confirmPayment()">I Have Paid</button>
-  </div>
-</div>
+<h3>Send Coins</h3>
+<input type="text" id="sendTo" placeholder="Recipient Wallet ID" />
+<input type="number" id="sendAmount" placeholder="Amount" />
+<button onclick="sendCoins()">Send</button>
+
+<h3>Redeem Coins</h3>
+<button onclick="redeemCoins()">Redeem 10,000 GLBC</button>
+
+<h3>History</h3>
+<ul id="history"></ul>
+
+<p><strong>Value:</strong> ₹10 / GLBC</p>
+<p>USD: ~$0.12 | EUR: ~€0.11 | JPY: ~¥18</p>
+<button onclick="logout()">Logout</button>
 
   </div>  <script>
-    let balance = 0;
-    let otp = "123456"; // Simulated OTP
-    let timerInterval;
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT0ptouf5QltcOkRUJZQz3oXUFbL7qHtc",
+      authDomain: "globalewalletlogin.firebaseapp.com",
+      projectId: "globalewalletlogin",
+      storageBucket: "globalewalletlogin.appspot.com",
+      messagingSenderId: "439233719660",
+      appId: "1:439233719660:web:92deeac42afec3a6911749",
+      measurementId: "G-068NPMVRYH"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let verificationId = null;
+    let currentUser = null;
 
     function sendOTP() {
-      document.getElementById("otp").style.display = "block";
-      document.getElementById("verifyBtn").style.display = "block";
-      alert("Simulated OTP sent: " + otp);
+      const phone = document.getElementById('phone').value;
+      const username = document.getElementById('username').value;
+      if (!phone || !username) return alert('Enter username and phone');
+
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+      auth.signInWithPhoneNumber(phone, window.recaptchaVerifier)
+        .then(confirmationResult => {
+          verificationId = confirmationResult.verificationId;
+          document.getElementById('otp').classList.remove('hidden');
+          document.getElementById('verifyBtn').classList.remove('hidden');
+        })
+        .catch(e => alert(e.message));
     }
 
     function verifyOTP() {
-      const entered = document.getElementById("otp").value;
-      if (entered === otp) {
-        document.getElementById("loginPage").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
-        const user = document.getElementById("username").value;
-        document.getElementById("walletId").innerText = user;
-      } else {
-        alert("Incorrect OTP");
-      }
+      const otp = document.getElementById('otp').value;
+      const username = document.getElementById('username').value;
+      const credential = firebase.auth.PhoneAuthProvider.credential(verificationId, otp);
+
+      auth.signInWithCredential(credential).then(res => {
+        currentUser = res.user;
+        const walletId = currentUser.uid;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        document.getElementById('walletId').textContent = walletId;
+        document.getElementById('dispUsername').textContent = username;
+
+        db.collection("wallets").doc(walletId).set({ username, balance: 0 }, { merge: true });
+        db.collection("wallets").doc(walletId).onSnapshot(doc => {
+          const data = doc.data();
+          document.getElementById('balance').textContent = data.balance || 0;
+        });
+      });
     }
 
-    function sendCoins() {
-      const amount = parseInt(document.getElementById("sendAmount").value);
-      if (amount > balance) return alert("Insufficient Balance");
-      balance -= amount;
-      updateBalance();
-      alert("Sent " + amount + " GLBC successfully!");
-    }
-
-    function redeemCoins() {
-      if (balance < 10000) return alert("Need 10,000 GLBC to redeem");
-      balance -= 10000;
-      updateBalance();
-      alert("Redeemed 10,000 GLBC to bank/UPI");
-    }
-
-    function buyPlan() {
-      const amount = document.getElementById("planSelect").value;
-      document.getElementById("dashboard").style.display = "none";
-      document.getElementById("paymentPage").style.display = "block";
-      document.getElementById("qrAmount").innerText = amount;
-      const qr = `https://api.qrserver.com/v1/create-qr-code/?data=upi://pay?pa=7604909512@fam&pn=GlobalCoinWallet&am=${amount}&cu=INR&size=250x250`;
-      document.getElementById("qrImage").src = qr;
-      startTimer();
-    }
-
-    function startTimer() {
-      let total = 300;
-      timerInterval = setInterval(() => {
-        total--;
-        const min = Math.floor(total / 60);
-        const sec = total % 60;
-        document.getElementById("timer").innerText = `Time Left: ${min}:${sec.toString().padStart(2, '0')}`;
-        if (total <= 0) {
-          clearInterval(timerInterval);
-          alert("Payment session expired");
-          document.getElementById("paymentPage").style.display = "none";
-          document.getElementById("dashboard").style.display = "block";
-        }
-      }, 1000);
+    function showPaymentQR() {
+      const plan = document.getElementById('plan').value;
+      if (!plan) return alert("Please select a plan");
+      document.getElementById('qrSection').classList.remove('hidden');
     }
 
     function confirmPayment() {
-      clearInterval(timerInterval);
-      document.getElementById("paymentPage").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
-      balance += 100; // Simulate adding some GLBC
-      updateBalance();
-      alert("Plan Activated & GLBC Rewarded");
+      const confirmed = document.getElementById('paidConfirm').checked;
+      if (!confirmed) return alert("Please confirm payment");
+
+      const walletId = currentUser.uid;
+      const plan = document.getElementById('plan').value;
+      let reward = 0;
+      if (plan === "basic") reward = 0.000001;
+      else if (plan === "pro") reward = 0.00001;
+      else if (plan === "ultra") reward = 0.0001;
+
+      db.collection("wallets").doc(walletId).update({ balance: firebase.firestore.FieldValue.increment(reward) });
+      db.collection("wallets").doc(walletId).collection("history").add({ type: "Plan Purchase", plan, reward, time: new Date() });
+      alert("Plan Activated!");
+      document.getElementById('qrSection').classList.add('hidden');
     }
 
-    function updateBalance() {
-      document.getElementById("walletBalance").innerText = `Balance: ${balance} GLBC`;
+    function sendCoins() {
+      const to = document.getElementById('sendTo').value;
+      const amount = parseFloat(document.getElementById('sendAmount').value);
+      const from = currentUser.uid;
+      if (!to || !amount) return alert("Fill both fields");
+
+      db.collection("wallets").doc(from).get().then(doc => {
+        const data = doc.data();
+        if (data.balance < amount) return alert("Not enough balance");
+
+        db.collection("wallets").doc(from).update({ balance: firebase.firestore.FieldValue.increment(-amount) });
+        db.collection("wallets").doc(to).update({ balance: firebase.firestore.FieldValue.increment(amount) });
+        db.collection("wallets").doc(from).collection("history").add({ type: "Sent", to, amount, time: new Date() });
+        db.collection("wallets").doc(to).collection("history").add({ type: "Received", from, amount, time: new Date() });
+      });
+    }
+
+    function redeemCoins() {
+      const walletId = currentUser.uid;
+      db.collection("wallets").doc(walletId).get().then(doc => {
+        const data = doc.data();
+        if (data.balance >= 10000) {
+          db.collection("wallets").doc(walletId).update({ balance: firebase.firestore.FieldValue.increment(-10000) });
+          db.collection("wallets").doc(walletId).collection("history").add({ type: "Redeemed", amount: 10000, time: new Date() });
+          alert("Redeem successful! Our team will process it.");
+        } else {
+          alert("You need exactly 10,000 coins to redeem.");
+        }
+      });
+    }
+
+    function logout() {
+      auth.signOut();
+      location.reload();
     }
   </script></body>
 </html>
