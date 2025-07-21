@@ -1,177 +1,218 @@
-<!DOCTYPE html><html lang="en"><head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GlobalCoin Wallet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body {
+    * {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: white;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #121212;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
     header {
-      text-align: center;
+      background-color: #1e1e1e;
       padding: 1rem;
-      background: #1e1e1e;
-      font-size: 1.5rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.2rem;
+      border-bottom: 1px solid #333;
+    }
+    main {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
     }
     nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      background-color: #1e1e1e;
+      border-top: 1px solid #333;
       display: flex;
       justify-content: space-around;
-      background: #1e1e1e;
+      align-items: center;
       padding: 0.5rem 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
     }
     nav button {
       background: none;
       border: none;
-      color: white;
-      font-size: 1rem;
+      color: #aaa;
+      font-size: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    nav button.active {
+      color: #00ffcc;
     }
     section {
-      padding: 2rem;
       display: none;
     }
     section.active {
       display: block;
     }
-    .input {
-      display: block;
-      margin: 1rem 0;
-      width: 100%;
-      padding: 0.5rem;
-      border-radius: 4px;
-      border: none;
+    .balance-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #222;
+      border-radius: 1rem;
+      text-align: center;
     }
     .btn {
-      background: #03dac6;
-      color: black;
-      padding: 0.75rem 1.5rem;
+      background: #00ffcc;
+      color: #000;
+      padding: 0.7rem 1.2rem;
       border: none;
-      border-radius: 5px;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
       cursor: pointer;
       font-weight: bold;
     }
-    .qr-container {
-      text-align: center;
-      margin-top: 1rem;
-    }
   </style>
-</head><body>
-  <header>🌍 GlobalCoin Wallet</header>  <section id="home" class="active">
-    <h2>Dashboard</h2>
-    <p><strong>Wallet Address:</strong> <span id="walletAddress"></span></p>
-    <p><strong>Balance:</strong> <span id="walletBalance">0</span> GLBC</p>
-    <button class="btn" onclick="backupWallet()">Backup Wallet</button>
-    <input type="file" onchange="restoreWallet(event)" />
-  </section>  <section id="send">
-    <h2>Send GLBC</h2>
-    <input type="text" id="sendTo" class="input" placeholder="Recipient Address">
-    <input type="number" id="sendAmount" class="input" placeholder="Amount (GLBC)">
-    <button class="btn" onclick="sendCoins()">Send</button>
-  </section>  <section id="receive">
-    <h2>Receive GLBC</h2>
-    <input type="number" id="receiveAmount" class="input" placeholder="Enter amount to receive">
-    <button class="btn" onclick="generateQR()">Generate QR</button>
-    <div class="qr-container">
-      <canvas id="qrCanvas"></canvas>
-    </div>
-  </section>  <section id="redeem">
-    <h2>Redeem GLBC</h2>
-    <p>Minimum redeemable: 10,000 GLBC</p>
-    <button class="btn" onclick="redeemCoins()">Redeem</button>
-  </section>  <section id="about">
-    <h2>About the Coin</h2>
-    <p><strong>Coin:</strong> GlobalCoin (GLBC)</p>
-    <p><strong>Fixed Rate:</strong> ₹10 / GLBC</p>
-    <p><strong>Creator:</strong> Mohammed Riyash B, India, 2025</p>
-  </section>  <nav>
-    <button onclick="showTab('home')">🏠 Home</button>
-    <button onclick="showTab('send')">📤 Send</button>
-    <button onclick="showTab('receive')">📥 Receive</button>
-    <button onclick="showTab('redeem')">💸 Redeem</button>
-    <button onclick="showTab('about')">ℹ️ About</button>
-  </nav>  <script src="https://cdn.jsdelivr.net/npm/qrious/dist/qrious.min.js"></script>  <script>
-    let wallet = JSON.parse(localStorage.getItem('wallet')) || createWallet();
-    updateUI();
+</head>
+<body>
+  <header>GlobalCoin Wallet</header>
+  <main>
+    <section id="home" class="active">
+      <h2>Wallet Overview</h2>
+      <div class="balance-box">
+        <p><strong>Wallet Address:</strong></p>
+        <p id="walletAddress">-</p>
+        <p style="margin-top:1rem;"><strong>Balance:</strong> <span id="walletBalance">0</span> GLBC</p>
+      </div>
+      <button class="btn" onclick="backupWallet()">Backup Wallet</button>
+      <button class="btn" onclick="restoreWallet()">Restore Wallet</button>
+    </section><section id="send">
+  <h2>Send GLBC</h2>
+  <input type="text" id="sendAddress" placeholder="Recipient Wallet Address" style="width: 100%; padding: 0.5rem; margin: 1rem 0;">
+  <input type="number" id="sendAmount" placeholder="Amount" style="width: 100%; padding: 0.5rem;">
+  <button class="btn" onclick="sendCoins()">Send</button>
+</section>
 
-    function createWallet() {
-      const address = 'GLBC-' + Math.random().toString(36).substring(2, 12).toUpperCase();
-      const wallet = { address, balance: 0 };
-      localStorage.setItem('wallet', JSON.stringify(wallet));
-      return wallet;
+<section id="receive">
+  <h2>Receive GLBC</h2>
+  <p>Your wallet QR code:</p>
+  <canvas id="qrCanvas"></canvas>
+</section>
+
+<section id="redeem">
+  <h2>Redeem GLBC</h2>
+  <p>Minimum redeemable amount is 10,000 GLBC</p>
+  <input type="text" id="upiId" placeholder="Enter your UPI ID" style="width: 100%; padding: 0.5rem;">
+  <button class="btn" onclick="redeemCoins()">Redeem</button>
+</section>
+
+<section id="about">
+  <h2>About GlobalCoin</h2>
+  <p>GlobalCoin Wallet is built by Mohammed Riyash B, India 2025. This is an independent decentralized wallet for GLBC tokens.</p>
+</section>
+
+  </main>  <nav>
+    <button onclick="switchTab('home')" class="active">Home</button>
+    <button onclick="switchTab('send')">Send</button>
+    <button onclick="switchTab('receive')">Receive</button>
+    <button onclick="switchTab('redeem')">Redeem</button>
+    <button onclick="switchTab('about')">About</button>
+  </nav>  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>  <script>
+    const tabs = document.querySelectorAll('section');
+    const navButtons = document.querySelectorAll('nav button');
+
+    function switchTab(tabId) {
+      tabs.forEach(t => t.classList.remove('active'));
+      navButtons.forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      [...navButtons].find(btn => btn.textContent.toLowerCase() === tabId).classList.add('active');
+    }
+
+    let wallet = {
+      address: localStorage.getItem('glbc_address') || generateAddress(),
+      balance: parseFloat(localStorage.getItem('glbc_balance') || '0')
+    };
+
+    function generateAddress() {
+      const addr = 'GLBC-' + Math.random().toString(36).substr(2, 10).toUpperCase();
+      localStorage.setItem('glbc_address', addr);
+      return addr;
     }
 
     function updateUI() {
       document.getElementById('walletAddress').textContent = wallet.address;
-      document.getElementById('walletBalance').textContent = wallet.balance;
-    }
-
-    function showTab(id) {
-      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-
-    function sendCoins() {
-      const to = document.getElementById('sendTo').value.trim();
-      const amount = parseFloat(document.getElementById('sendAmount').value);
-      if (!to || isNaN(amount) || amount <= 0 || amount > wallet.balance) {
-        alert('Invalid input or insufficient balance.');
-        return;
-      }
-      wallet.balance -= amount;
-      alert(`Sent ${amount} GLBC to ${to}`);
-      localStorage.setItem('wallet', JSON.stringify(wallet));
-      updateUI();
-    }
-
-    function generateQR() {
-      const amount = parseFloat(document.getElementById('receiveAmount').value);
+      document.getElementById('walletBalance').textContent = wallet.balance.toFixed(4);
       const qr = new QRious({
         element: document.getElementById('qrCanvas'),
-        value: `${wallet.address}?amount=${amount}`,
+        value: wallet.address,
         size: 200,
       });
     }
 
-    function redeemCoins() {
-      if (wallet.balance < 10000) {
-        alert('Minimum 10,000 GLBC required to redeem.');
+    function sendCoins() {
+      const to = document.getElementById('sendAddress').value.trim();
+      const amount = parseFloat(document.getElementById('sendAmount').value);
+      if (!to || isNaN(amount) || amount <= 0 || amount > wallet.balance) {
+        alert('Invalid send request');
         return;
       }
-      alert('Redeemed 10,000 GLBC successfully!');
-      wallet.balance -= 10000;
-      localStorage.setItem('wallet', JSON.stringify(wallet));
+      wallet.balance -= amount;
+      localStorage.setItem('glbc_balance', wallet.balance);
+      alert(`Sent ${amount} GLBC to ${to}`);
+      updateUI();
+    }
+
+    function redeemCoins() {
+      const upi = document.getElementById('upiId').value.trim();
+      if (wallet.balance < 10000) return alert('You need at least 10,000 GLBC to redeem.');
+      if (!upi.includes('@')) return alert('Enter a valid UPI ID.');
+      alert(`Redeem request sent to admin for ${upi}.`);
+      wallet.balance = 0;
+      localStorage.setItem('glbc_balance', '0');
       updateUI();
     }
 
     function backupWallet() {
       const blob = new Blob([JSON.stringify(wallet)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
+      a.href = url;
       a.download = 'globalcoin_wallet_backup.json';
       a.click();
     }
 
-    function restoreWallet(event) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (data.address && typeof data.balance === 'number') {
-            wallet = data;
-            localStorage.setItem('wallet', JSON.stringify(wallet));
-            updateUI();
-            alert('Wallet restored successfully.');
+    function restoreWallet() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = evt => {
+          try {
+            const data = JSON.parse(evt.target.result);
+            if (data.address && data.balance !== undefined) {
+              wallet = data;
+              localStorage.setItem('glbc_address', wallet.address);
+              localStorage.setItem('glbc_balance', wallet.balance);
+              updateUI();
+              alert('Wallet restored!');
+            }
+          } catch {
+            alert('Invalid file');
           }
-        } catch (err) {
-          alert('Invalid wallet file.');
-        }
+        };
+        reader.readAsText(file);
       };
-      reader.readAsText(file);
+      input.click();
     }
-  </script></body></html>
+
+    updateUI();
+  </script></body>
+</html>
